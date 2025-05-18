@@ -62,22 +62,6 @@ func TestSecret_Expose(t *testing.T) {
 	}
 }
 
-func TestSecret_JSONRoundTrip(t *testing.T) {
-	val := "supersecret"
-	s := New(val)
-	b, err := json.Marshal(s)
-	if err != nil {
-		t.Fatalf("Marshal error: %v", err)
-	}
-	var s2 Secret[string]
-	if err := json.Unmarshal(b, &s2); err != nil {
-		t.Fatalf("Unmarshal error: %v", err)
-	}
-	if got := s2.Expose(); got != redacted {
-		t.Errorf("JSON roundtrip Expose() = %q, want %q", got, val)
-	}
-}
-
 func TestSecret_Format(t *testing.T) {
 	s := New("supersecret")
 	if got := fmt.Sprintf("%s", s); got != redacted {

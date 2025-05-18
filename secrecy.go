@@ -13,7 +13,8 @@ var (
 	redactedJSON    = []byte(`"` + redacted + `"`)
 )
 
-// Secret wraps a sensitive value to prevent it from being inadvertently leaked.
+// Secret wraps a sensitive value to prevent it from being inadvertently leaked
+// through logging, formatting, or other encoding mechanisms.
 // To retrieve the underlying value, the Expose method must be called.
 type Secret[T any] struct {
 	value T
