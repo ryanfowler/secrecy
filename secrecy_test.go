@@ -64,7 +64,7 @@ func TestSecret_Expose(t *testing.T) {
 
 func TestSecret_Format(t *testing.T) {
 	s := New("supersecret")
-	if got := fmt.Sprintf("%s", s); got != redacted {
+	if got := fmt.Sprintf("v = %s", s); got != "v = "+redacted {
 		t.Errorf("Format %%s = %q, want %q", got, redacted)
 	}
 	if got := fmt.Sprintf("%q", s); got != fmt.Sprintf("%q", redacted) {

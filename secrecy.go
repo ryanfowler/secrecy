@@ -8,9 +8,8 @@ const (
 )
 
 var (
-	redactedBytes   = []byte(redacted)
-	redactedGoBytes = []byte(redactedGo)
-	redactedJSON    = []byte(`"` + redacted + `"`)
+	redactedBytes = []byte(redacted)
+	redactedJSON  = []byte(`"` + redacted + `"`)
 )
 
 // Secret wraps a sensitive value to prevent it from being inadvertently leaked
