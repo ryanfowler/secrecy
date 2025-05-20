@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"runtime"
 	"testing"
 )
 
@@ -118,4 +119,104 @@ func TestSecret_MarshalTOML(t *testing.T) {
 	if !bytes.Equal(b, redactedBytes) {
 		t.Errorf("MarshalTOML() = %q, want %q", b, redactedBytes)
 	}
+}
+
+func TestZeroizingSecret(t *testing.T) {
+	s := NewZeroizing("supersecret")
+	if v := s.String(); v != redacted {
+		t.Errorf("unexpected string for zeroizing secret: %s", v)
+	}
+	s = nil
+	runtime.GC()
+}
+
+func TestZeroize(t *testing.T) {
+	t.Run("nil", func(t *testing.T) {
+		Zeroize(nil)
+	})
+
+	t.Run("string", func(t *testing.T) {
+		value := "testval"
+		Zeroize(&value)
+		if value != "" {
+			t.Errorf("unexpected value: %s", value)
+		}
+	})
+
+	t.Run("*int", func(t *testing.T) {
+		value := 42
+		ptr := &value
+		Zeroize(&ptr)
+		if ptr != nil {
+			t.Errorf("unexpected value for pointer: %v", ptr)
+		}
+		if value != 0 {
+			t.Errorf("unexpected value for int: %d", value)
+		}
+	})
+
+	t.Run("array", func(t *testing.T) {
+		value := [3]int{1, 2, 3}
+		Zeroize(&value)
+		for _, v := range value {
+			if v != 0 {
+				t.Errorf("unexpected value: %d", v)
+			}
+		}
+	})
+
+	t.Run("slice", func(t *testing.T) {
+		value := []int{1, 2, 3}
+		Zeroize(value)
+		for _, v := range value {
+			if v != 0 {
+				t.Errorf("unexpected value: %d", v)
+			}
+		}
+	})
+
+	t.Run("byte slice", func(t *testing.T) {
+		value := []byte("hi")
+		Zeroize(value)
+		for _, v := range value {
+			if v != 0 {
+				t.Errorf("unexpected value: %d", v)
+			}
+		}
+	})
+
+	t.Run("map", func(t *testing.T) {
+		value := map[int]int{1: 100, 2: 200, 3: 300}
+		Zeroize(value)
+		if len(value) != 0 {
+			t.Errorf("unexpected value: %v", value)
+		}
+	})
+
+	t.Run("nil map", func(t *testing.T) {
+		var value map[int]int
+		Zeroize(value)
+	})
+
+	t.Run("struct", func(t *testing.T) {
+		value := struct {
+			Name string
+			Age  int
+			id   int
+		}{
+			Name: "myname",
+			Age:  100,
+			id:   42,
+		}
+		Zeroize(&value)
+		if value.Name != "" {
+			t.Errorf("unexpected Name: %s", value.Name)
+		}
+		if value.Age != 0 {
+			t.Errorf("unexpected Age: %d", value.Age)
+		}
+		if value.id != 0 {
+			t.Errorf("unexpected id: %d", value.id)
+		}
+	})
 }

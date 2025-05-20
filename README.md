@@ -32,6 +32,9 @@ login := Login{
 
 // Login: {Username:ryanfowler Password:[redacted]}
 fmt.Printf("Login: %+v\n", login)
+
+// value == "secretpassword"
+value := login.Password.Expose()
 ```
 
 ## License
