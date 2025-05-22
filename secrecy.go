@@ -12,8 +12,8 @@ const (
 )
 
 var (
-	redactedBytes = []byte(redacted)
-	redactedJSON  = []byte(`"` + redacted + `"`)
+	redactedBytes  = []byte(redacted)
+	redactedQuotes = []byte(`"` + redacted + `"`)
 )
 
 // Secret wraps a sensitive value to prevent it from being inadvertently leaked
@@ -61,7 +61,7 @@ func (s Secret[T]) MarshalText() ([]byte, error) {
 
 // MarshalJSON implements the json.Marshaler interface.
 func (s Secret[T]) MarshalJSON() ([]byte, error) {
-	return redactedJSON, nil
+	return redactedQuotes, nil
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
@@ -81,7 +81,7 @@ func (s Secret[T]) MarshalYAML() (any, error) {
 
 // MarshalTOML implements the toml.Marshaler interface.
 func (s Secret[T]) MarshalTOML() ([]byte, error) {
-	return redactedBytes, nil
+	return redactedQuotes, nil
 }
 
 // Zeroize deep "zeros" the provided value, if mutable. It traverses slices,

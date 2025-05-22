@@ -39,8 +39,8 @@ func TestSecret_MarshalJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalJSON() error = %v", err)
 	}
-	if !bytes.Equal(b, redactedJSON) {
-		t.Errorf("MarshalJSON() = %q, want %q", b, redactedJSON)
+	if !bytes.Equal(b, redactedQuotes) {
+		t.Errorf("MarshalJSON() = %q, want %q", b, redactedQuotes)
 	}
 }
 
@@ -116,7 +116,7 @@ func TestSecret_MarshalTOML(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalTOML() error = %v", err)
 	}
-	if !bytes.Equal(b, redactedBytes) {
+	if !bytes.Equal(b, redactedQuotes) {
 		t.Errorf("MarshalTOML() = %q, want %q", b, redactedBytes)
 	}
 }
