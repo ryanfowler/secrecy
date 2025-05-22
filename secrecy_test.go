@@ -155,6 +155,22 @@ func TestZeroize(t *testing.T) {
 		}
 	})
 
+	t.Run("**int", func(t *testing.T) {
+		value := 42
+		ptr := &value
+		ptr2 := &ptr
+		Zeroize(&ptr2)
+		if ptr2 != nil {
+			t.Errorf("unexpected value for pointer: %v", ptr2)
+		}
+		if ptr != nil {
+			t.Errorf("unexpected value for pointer: %v", ptr)
+		}
+		if value != 0 {
+			t.Errorf("unexpected value for int: %d", value)
+		}
+	})
+
 	t.Run("array", func(t *testing.T) {
 		value := [3]int{1, 2, 3}
 		Zeroize(&value)
@@ -217,6 +233,38 @@ func TestZeroize(t *testing.T) {
 		}
 		if value.id != 0 {
 			t.Errorf("unexpected id: %d", value.id)
+		}
+	})
+
+	t.Run("nested struct", func(t *testing.T) {
+		type Inner struct {
+			Val int
+		}
+		type Outer struct {
+			InnerField *Inner
+			SliceField []int
+			MapField   map[string]string
+		}
+
+		inner := &Inner{Val: 99}
+		value := Outer{
+			InnerField: inner,
+			SliceField: []int{1, 2, 3},
+			MapField:   map[string]string{"a": "b"},
+		}
+
+		Zeroize(&value)
+		if value.InnerField != nil {
+			t.Errorf("unexpected InnerField: %v", value.InnerField)
+		}
+		if len(value.SliceField) != 0 {
+			t.Errorf("unexpected SliceField: %v", value.SliceField)
+		}
+		if len(value.MapField) != 0 {
+			t.Errorf("unexpected MapField: %v", value.MapField)
+		}
+		if inner.Val != 0 {
+			t.Errorf("unexpected Inner.Val: %d", inner.Val)
 		}
 	})
 }
