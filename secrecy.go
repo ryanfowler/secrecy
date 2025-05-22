@@ -129,9 +129,8 @@ func zeroize(value any, n int) {
 	case reflect.Array, reflect.Slice:
 		for i := range v.Len() {
 			index := v.Index(i)
-			zeroize(index.Interface(), n)
 			if index.CanSet() {
-				index.Set(reflect.Zero(index.Type()))
+				index.SetZero()
 			}
 		}
 	case reflect.Map:
@@ -140,14 +139,22 @@ func zeroize(value any, n int) {
 			key := iter.Key()
 			value := iter.Value()
 			v.SetMapIndex(key, reflect.Value{})
-			zeroize(key.Interface(), n)
-			zeroize(value.Interface(), n)
+			if key.CanInterface() {
+				zeroize(key.Interface(), n)
+			}
+			if value.CanInterface() {
+				zeroize(value.Interface(), n)
+			}
 		}
 	case reflect.Struct:
 		t := v.Type()
 		for i := range t.NumField() {
-			if t.Field(i).IsExported() {
-				zeroize(v.Field(i).Interface(), n)
+			if !t.Field(i).IsExported() {
+				continue
+			}
+			field := v.Field(i)
+			if field.CanInterface() {
+				zeroize(field.Interface(), n)
 			}
 		}
 	}
