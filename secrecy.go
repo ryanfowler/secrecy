@@ -129,6 +129,9 @@ func zeroize(value any, n int) {
 	case reflect.Array, reflect.Slice:
 		for i := range v.Len() {
 			index := v.Index(i)
+			if index.CanInterface() {
+				zeroize(index.Interface(), n)
+			}
 			if index.CanSet() {
 				index.SetZero()
 			}
