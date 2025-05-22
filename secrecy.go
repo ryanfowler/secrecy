@@ -84,6 +84,12 @@ func (s Secret[T]) MarshalTOML() ([]byte, error) {
 	return redactedQuotes, nil
 }
 
+// Zero runs the Zeroize function on the underlying secret value. Calling the
+// Expose method afterwards will always return the zero value for type T.
+func (s *Secret[T]) Zero() {
+	Zeroize(&s.value)
+}
+
 // Zeroize deep "zeros" the provided value, if mutable. It traverses slices,
 // maps, and struct fields as necessary to deep zero all child elements. Please
 // note that although structs are fully zeroed, private struct fields cannot

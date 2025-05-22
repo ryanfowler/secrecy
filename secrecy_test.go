@@ -121,6 +121,33 @@ func TestSecret_MarshalTOML(t *testing.T) {
 	}
 }
 
+func TestSecret_ZeroBytes(t *testing.T) {
+	value := []byte("supersecret")
+	s := New(value)
+	if !bytes.Equal(s.Expose(), value) {
+		t.Errorf("unexpected secret value: %v", s.Expose())
+	}
+
+	empty := make([]byte, len(value))
+	s.Zero()
+	if !bytes.Equal(value, empty) {
+		t.Errorf("unexpected value after zeroing: %v", value)
+	}
+}
+
+func TestSecret_ZeroString(t *testing.T) {
+	value := "supersecret"
+	s := New(value)
+	if s.Expose() != value {
+		t.Errorf("unexpected secret value: %s", s.Expose())
+	}
+
+	s.Zero()
+	if s.Expose() != "" {
+		t.Errorf("unexpected value after zeroing: %s", s.Expose())
+	}
+}
+
 func TestZeroizingSecret(t *testing.T) {
 	s := NewZeroizing("supersecret")
 	if v := s.String(); v != redacted {
