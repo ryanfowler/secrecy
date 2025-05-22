@@ -294,4 +294,17 @@ func TestZeroize(t *testing.T) {
 			t.Errorf("unexpected Inner.Val: %d", inner.Val)
 		}
 	})
+
+	t.Run("recursive", func(t *testing.T) {
+		type Node struct {
+			Next *Node
+		}
+		n := &Node{}
+		n.Next = n
+
+		Zeroize(n)
+		if n.Next != nil {
+			t.Errorf("unexpected value: %v", n)
+		}
+	})
 }

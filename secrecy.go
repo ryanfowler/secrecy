@@ -95,9 +95,14 @@ func (s *Secret[T]) Zero() {
 // note that although structs are fully zeroed, private struct fields cannot
 // be deep zeroed.
 func Zeroize(value any) {
-	if value == nil {
+	zeroize(value, 0)
+}
+
+func zeroize(value any, n int) {
+	if value == nil || n > 100 {
 		return
 	}
+	n++
 
 	// Fast path for when value is a []byte.
 	if b, ok := value.([]byte); ok {
@@ -119,12 +124,12 @@ func Zeroize(value any) {
 	switch v.Kind() {
 	case reflect.Interface, reflect.Ptr:
 		if !v.IsNil() {
-			Zeroize(v.Interface())
+			zeroize(v.Interface(), n)
 		}
 	case reflect.Array, reflect.Slice:
 		for i := range v.Len() {
 			index := v.Index(i)
-			Zeroize(index.Interface())
+			zeroize(index.Interface(), n)
 			if index.CanSet() {
 				index.Set(reflect.Zero(index.Type()))
 			}
@@ -135,14 +140,14 @@ func Zeroize(value any) {
 			key := iter.Key()
 			value := iter.Value()
 			v.SetMapIndex(key, reflect.Value{})
-			Zeroize(key.Interface())
-			Zeroize(value.Interface())
+			zeroize(key.Interface(), n)
+			zeroize(value.Interface(), n)
 		}
 	case reflect.Struct:
 		t := v.Type()
 		for i := range t.NumField() {
 			if t.Field(i).IsExported() {
-				Zeroize(v.Field(i).Interface())
+				zeroize(v.Field(i).Interface(), n)
 			}
 		}
 	}
