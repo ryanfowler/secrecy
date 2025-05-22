@@ -15,7 +15,8 @@ go get github.com/ryanfowler/secrecy@latest
 
 ## Usage
 
-Import the package and wrap sensitive values:
+Import the package and wrap sensitive values. In order to access the underlying
+secret, you must use the `Expose()` method.
 
 ```go
 import "github.com/ryanfowler/secrecy"
@@ -30,12 +31,17 @@ login := Login{
     Password: secrecy.New("secretpassword"),
 }
 
-// Login: {Username:ryanfowler Password:[redacted]}
-fmt.Printf("Login: %+v\n", login)
+// Will output:
+// Login = {Username:ryanfowler Password:[redacted]}
+fmt.Printf("Login = %+v\n", login)
 
-// value == "secretpassword"
-value := login.Password.Expose()
+// Will output:
+// Equal = true
+fmt.Printf("Equal = %t\n", login.Password.Expose() == "secretpassword")
 ```
+
+In order to have the underlying secret "zeroed" when the Secret gets garbage
+collected, create the Secret with the `secrecy.NewZeroizing` method.
 
 ## License
 
