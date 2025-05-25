@@ -39,8 +39,8 @@ func TestSecret_MarshalJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalJSON() error = %v", err)
 	}
-	if !bytes.Equal(b, redactedQuotes) {
-		t.Errorf("MarshalJSON() = %q, want %q", b, redactedQuotes)
+	if !bytes.Equal(b, redactedJSON) {
+		t.Errorf("MarshalJSON() = %q, want %q", b, redactedJSON)
 	}
 }
 
@@ -80,8 +80,8 @@ func TestSecret_Format(t *testing.T) {
 	if got := fmt.Sprintf("%+v", s); got != redacted {
 		t.Errorf("Format %%+v = %q, want %q", got, redacted)
 	}
-	if got := fmt.Sprintf("%x", s); got != "5b72656461637465645d" {
-		t.Errorf("Format %%x = %q, want %q", got, "5b72656461637465645d")
+	if got := fmt.Sprintf("%x", s); got != "5b52454441435445445d" {
+		t.Errorf("Format %%x = %q, want %q", got, "5b52454441435445445d")
 	}
 	if got := fmt.Sprintf("%T", s); got != "secrecy.Secret[string]" {
 		t.Errorf("Format %%T = %q, want %q", got, "secrecy.Secret[string]")
@@ -116,7 +116,7 @@ func TestSecret_MarshalTOML(t *testing.T) {
 	if err != nil {
 		t.Fatalf("MarshalTOML() error = %v", err)
 	}
-	if !bytes.Equal(b, redactedQuotes) {
+	if !bytes.Equal(b, redactedJSON) {
 		t.Errorf("MarshalTOML() = %q, want %q", b, redactedBytes)
 	}
 }
