@@ -6,15 +6,27 @@ import (
 	"runtime"
 )
 
-const (
-	redacted   = "[redacted]"
-	redactedGo = `Secret{` + redacted + `}`
+var (
+	redacted      string
+	redactedGo    string
+	redactedBytes []byte
+	redactedJSON  []byte
 )
 
-var (
-	redactedBytes  = []byte(redacted)
-	redactedQuotes = []byte(`"` + redacted + `"`)
-)
+func init() {
+	SetRedactedString("[REDACTED]")
+}
+
+// SetRedactedString sets the global value used as the string when a secret is
+// formatted or encoded. This method must be called before any usage of Secret.
+//
+// By default, it is set to "[REDACTED]".
+func SetRedactedString(s string) {
+	redacted = s
+	redactedGo = `Secret{` + redacted + `}`
+	redactedBytes = []byte(redacted)
+	redactedJSON, _ = json.Marshal(redacted)
+}
 
 // Secret wraps a sensitive value to prevent it from being inadvertently leaked
 // through logging, formatting, or other encoding mechanisms.
@@ -61,7 +73,7 @@ func (s Secret[T]) MarshalText() ([]byte, error) {
 
 // MarshalJSON implements the json.Marshaler interface.
 func (s Secret[T]) MarshalJSON() ([]byte, error) {
-	return redactedQuotes, nil
+	return redactedJSON, nil
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
@@ -81,7 +93,7 @@ func (s Secret[T]) MarshalYAML() (any, error) {
 
 // MarshalTOML implements the toml.Marshaler interface.
 func (s Secret[T]) MarshalTOML() ([]byte, error) {
-	return redactedQuotes, nil
+	return redactedJSON, nil
 }
 
 // Zero runs the Zeroize function on the underlying secret value. Calling the
