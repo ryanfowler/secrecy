@@ -162,6 +162,11 @@ func TestZeroize(t *testing.T) {
 		Zeroize(nil)
 	})
 
+	t.Run("zero value", func(t *testing.T) {
+		var n int
+		Zeroize(&n)
+	})
+
 	t.Run("string", func(t *testing.T) {
 		value := "testval"
 		Zeroize(&value)
