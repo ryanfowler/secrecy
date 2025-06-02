@@ -107,59 +107,51 @@ func (s *Secret[T]) Zero() {
 // note that although structs are fully zeroed, private struct fields cannot
 // be deep zeroed.
 func Zeroize(value any) {
-	zeroize(value, 0)
+	zeroize(reflect.ValueOf(value), 0)
 }
 
-func zeroize(value any, n int) {
-	if value == nil || n > 100 {
+func zeroize(v reflect.Value, n int) {
+	if !v.IsValid() || v.IsZero() || n > 100 {
 		return
 	}
 	n++
 
+	// Unwrap interfaces and pointers.
+	if v.Kind() == reflect.Interface || v.Kind() == reflect.Ptr {
+		v = v.Elem()
+		if !v.IsValid() || v.IsZero() {
+			return
+		}
+	}
+
 	// Fast path for when value is a []byte.
-	if b, ok := value.([]byte); ok {
+	if v.Kind() == reflect.Slice && v.Type().Elem().Kind() == reflect.Uint8 {
+		b := v.Bytes()
 		for i := range b {
 			b[i] = 0
 		}
 		return
 	}
 
-	// Unwrap interfaces and pointers.
-	v := reflect.ValueOf(value)
-	if v.Kind() == reflect.Interface || v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-	if v.IsZero() {
-		return
-	}
-
 	switch v.Kind() {
 	case reflect.Interface, reflect.Ptr:
 		if !v.IsNil() {
-			zeroize(v.Interface(), n)
+			zeroize(v, n)
 		}
 	case reflect.Array, reflect.Slice:
 		for i := range v.Len() {
 			index := v.Index(i)
-			if index.CanInterface() {
-				zeroize(index.Interface(), n)
-			}
+			zeroize(index, n)
 			if index.CanSet() {
 				index.SetZero()
 			}
 		}
 	case reflect.Map:
-		iter := v.MapRange()
-		for iter.Next() {
-			key := iter.Key()
-			value := iter.Value()
+		for _, key := range v.MapKeys() {
+			value := v.MapIndex(key)
 			v.SetMapIndex(key, reflect.Value{})
-			if key.CanInterface() {
-				zeroize(key.Interface(), n)
-			}
-			if value.CanInterface() {
-				zeroize(value.Interface(), n)
-			}
+			zeroize(key, n)
+			zeroize(value, n)
 		}
 	case reflect.Struct:
 		t := v.Type()
@@ -167,10 +159,7 @@ func zeroize(value any, n int) {
 			if !t.Field(i).IsExported() {
 				continue
 			}
-			field := v.Field(i)
-			if field.CanInterface() {
-				zeroize(field.Interface(), n)
-			}
+			zeroize(v.Field(i), n)
 		}
 	}
 
