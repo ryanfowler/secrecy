@@ -233,6 +233,16 @@ func TestZeroize(t *testing.T) {
 		}
 	})
 
+	t.Run("byte array", func(t *testing.T) {
+		value := [...]byte{'t', 'e', 's', 't'}
+		Zeroize(&value)
+		for _, v := range value {
+			if v != 0 {
+				t.Errorf("unexpected value: %d", v)
+			}
+		}
+	})
+
 	t.Run("map", func(t *testing.T) {
 		value := map[int]int{1: 100, 2: 200, 3: 300}
 		Zeroize(value)

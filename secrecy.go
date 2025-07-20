@@ -52,7 +52,7 @@ func New[T any](value T) Secret[T] {
 //	token := secrecy.NewZeroizing([]byte("key"))
 func NewZeroizing[T any](value T) *Secret[T] {
 	s := &Secret[T]{value: value}
-	runtime.AddCleanup(s, func(v T) { Zeroize(v) }, value)
+	runtime.AddCleanup(s, func(t *T) { Zeroize(t) }, &value)
 	return s
 }
 
@@ -116,6 +116,7 @@ func Zeroize(value any) {
 }
 
 func zeroize(v reflect.Value, n int) {
+	// Stop recursion if invalid, nil, or too deep.
 	if !v.IsValid() || v.IsZero() || n > 100 {
 		return
 	}
@@ -129,42 +130,39 @@ func zeroize(v reflect.Value, n int) {
 		}
 	}
 
-	// Fast path for when value is a []byte.
-	if v.Kind() == reflect.Slice && v.Type().Elem().Kind() == reflect.Uint8 {
-		b := v.Bytes()
-		for i := range b {
-			b[i] = 0
-		}
-		return
-	}
-
 	switch v.Kind() {
 	case reflect.Interface, reflect.Ptr:
 		if !v.IsNil() {
-			zeroize(v, n)
+			zeroize(v, n+1)
 		}
 	case reflect.Array, reflect.Slice:
-		for i := range v.Len() {
-			index := v.Index(i)
-			zeroize(index, n)
-			if index.CanSet() {
-				index.SetZero()
+		// Fast path for when value is a []byte.
+		if v.Type().Elem().Kind() == reflect.Uint8 {
+			b := v.Bytes()
+			for i := range b {
+				b[i] = 0
+			}
+		} else {
+			for i := range v.Len() {
+				zeroize(v.Index(i).Addr(), n+1)
 			}
 		}
 	case reflect.Map:
-		for _, key := range v.MapKeys() {
-			value := v.MapIndex(key)
-			v.SetMapIndex(key, reflect.Value{})
-			zeroize(key, n)
-			zeroize(value, n)
+		iter := v.MapRange()
+		for iter.Next() {
+			val := iter.Value()
+			if val.Kind() == reflect.Ptr || val.Kind() == reflect.Interface {
+				zeroize(val, n+1)
+			}
 		}
+		v.Clear()
 	case reflect.Struct:
 		t := v.Type()
 		for i := range t.NumField() {
-			if !t.Field(i).IsExported() {
-				continue
+			field := v.Field(i)
+			if field.CanAddr() && v.Type().Field(i).IsExported() {
+				zeroize(field.Addr(), n+1)
 			}
-			zeroize(v.Field(i), n)
 		}
 	}
 
