@@ -4,6 +4,7 @@
 package secrecy
 
 import (
+	"bytes"
 	"encoding/json"
 	"reflect"
 	"runtime"
@@ -46,10 +47,11 @@ func New[T any](value T) Secret[T] {
 }
 
 // NewZeroizing returns a pointer to a Secret that wraps the provided value and
-// automatically zeroes it when the Secret is garbage collected. The value
-// should not be accessed or modified outside of the returned Secret.
+// automatically zeroes it when the Secret is garbage collected. For reference
+// types (slices, maps, pointers), the underlying data is zeroed in place. For
+// value types, use the Zero method for deterministic zeroing.
 //
-//	token := secrecy.NewZeroizing([]byte("key"))
+// The value should not be accessed or modified outside of the returned Secret.
 func NewZeroizing[T any](value T) *Secret[T] {
 	s := &Secret[T]{value: value}
 	runtime.AddCleanup(s, func(t *T) { Zeroize(t) }, &value)
@@ -62,7 +64,7 @@ func (s Secret[T]) Expose() T {
 	return s.value
 }
 
-// String implements the Stinger interface.
+// String implements the Stringer interface.
 func (s Secret[T]) String() string {
 	return redacted
 }
@@ -74,12 +76,12 @@ func (s Secret[T]) GoString() string {
 
 // MarshalText implements the TextMarshaler interface.
 func (s Secret[T]) MarshalText() ([]byte, error) {
-	return redactedBytes, nil
+	return bytes.Clone(redactedBytes), nil
 }
 
 // MarshalJSON implements the json.Marshaler interface.
 func (s Secret[T]) MarshalJSON() ([]byte, error) {
-	return redactedJSON, nil
+	return bytes.Clone(redactedJSON), nil
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
@@ -89,7 +91,7 @@ func (s *Secret[T]) UnmarshalJSON(data []byte) error {
 
 // GobEncode implements the GobEncoder interface.
 func (s Secret[T]) GobEncode() ([]byte, error) {
-	return redactedBytes, nil
+	return bytes.Clone(redactedBytes), nil
 }
 
 // MarshalYAML implements the yaml.Marshaler interface.
@@ -99,7 +101,7 @@ func (s Secret[T]) MarshalYAML() (any, error) {
 
 // MarshalTOML implements the toml.Marshaler interface.
 func (s Secret[T]) MarshalTOML() ([]byte, error) {
-	return redactedJSON, nil
+	return bytes.Clone(redactedJSON), nil
 }
 
 // Zero runs the Zeroize function on the underlying secret value. After calling
@@ -117,7 +119,7 @@ func Zeroize(value any) {
 
 func zeroize(v reflect.Value, n int) {
 	// Stop recursion if invalid, nil, or too deep.
-	if !v.IsValid() || v.IsZero() || n > 100 {
+	if !v.IsValid() || n > 100 {
 		return
 	}
 	n++
@@ -125,7 +127,7 @@ func zeroize(v reflect.Value, n int) {
 	// Unwrap interfaces and pointers.
 	if v.Kind() == reflect.Interface || v.Kind() == reflect.Ptr {
 		v = v.Elem()
-		if !v.IsValid() || v.IsZero() {
+		if !v.IsValid() {
 			return
 		}
 	}
@@ -150,10 +152,7 @@ func zeroize(v reflect.Value, n int) {
 	case reflect.Map:
 		iter := v.MapRange()
 		for iter.Next() {
-			val := iter.Value()
-			if val.Kind() == reflect.Ptr || val.Kind() == reflect.Interface {
-				zeroize(val, n+1)
-			}
+			zeroize(iter.Value(), n+1)
 		}
 		v.Clear()
 	case reflect.Struct:

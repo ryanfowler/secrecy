@@ -251,6 +251,28 @@ func TestZeroize(t *testing.T) {
 		}
 	})
 
+	t.Run("map with slice values", func(t *testing.T) {
+		s1 := []byte("secret1")
+		s2 := []byte("secret2")
+		value := map[string][]byte{"a": s1, "b": s2}
+		Zeroize(value)
+		if len(value) != 0 {
+			t.Errorf("expected empty map, got: %v", value)
+		}
+		for _, b := range s1 {
+			if b != 0 {
+				t.Errorf("expected s1 backing array to be zeroed, got: %v", s1)
+				break
+			}
+		}
+		for _, b := range s2 {
+			if b != 0 {
+				t.Errorf("expected s2 backing array to be zeroed, got: %v", s2)
+				break
+			}
+		}
+	})
+
 	t.Run("nil map", func(t *testing.T) {
 		var value map[int]int
 		Zeroize(value)
@@ -322,4 +344,46 @@ func TestZeroize(t *testing.T) {
 			t.Errorf("unexpected value: %v", n)
 		}
 	})
+}
+
+func TestSecret_MarshalMutationSafety(t *testing.T) {
+	s := New("supersecret")
+
+	// Get a slice from MarshalText and mutate it.
+	b, _ := s.MarshalText()
+	b[0] = 'X'
+
+	// Subsequent call should still return correct data.
+	b2, _ := s.MarshalText()
+	if !bytes.Equal(b2, []byte(redacted)) {
+		t.Errorf("MarshalText corrupted after mutation: got %q, want %q", b2, redacted)
+	}
+
+	// Same for MarshalJSON.
+	j, _ := s.MarshalJSON()
+	j[0] = 'X'
+
+	j2, _ := s.MarshalJSON()
+	want, _ := json.Marshal(redacted)
+	if !bytes.Equal(j2, want) {
+		t.Errorf("MarshalJSON corrupted after mutation: got %q, want %q", j2, want)
+	}
+
+	// Same for GobEncode.
+	g, _ := s.GobEncode()
+	g[0] = 'X'
+
+	g2, _ := s.GobEncode()
+	if !bytes.Equal(g2, []byte(redacted)) {
+		t.Errorf("GobEncode corrupted after mutation: got %q, want %q", g2, redacted)
+	}
+
+	// Same for MarshalTOML.
+	tm, _ := s.MarshalTOML()
+	tm[0] = 'X'
+
+	tm2, _ := s.MarshalTOML()
+	if !bytes.Equal(tm2, want) {
+		t.Errorf("MarshalTOML corrupted after mutation: got %q, want %q", tm2, want)
+	}
 }
