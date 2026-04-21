@@ -243,6 +243,26 @@ func TestZeroize(t *testing.T) {
 		}
 	})
 
+	t.Run("unaddressable array", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Fatalf("Zeroize panicked: %v", r)
+			}
+		}()
+
+		Zeroize([3]int{1, 2, 3})
+	})
+
+	t.Run("unaddressable byte array", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Fatalf("Zeroize panicked: %v", r)
+			}
+		}()
+
+		Zeroize([3]byte{1, 2, 3})
+	})
+
 	t.Run("map", func(t *testing.T) {
 		value := map[int]int{1: 100, 2: 200, 3: 300}
 		Zeroize(value)
@@ -270,6 +290,14 @@ func TestZeroize(t *testing.T) {
 				t.Errorf("expected s2 backing array to be zeroed, got: %v", s2)
 				break
 			}
+		}
+	})
+
+	t.Run("map with byte array values", func(t *testing.T) {
+		value := map[string][3]byte{"a": {1, 2, 3}}
+		Zeroize(value)
+		if len(value) != 0 {
+			t.Errorf("expected empty map, got: %v", value)
 		}
 	})
 

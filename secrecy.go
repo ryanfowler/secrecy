@@ -139,14 +139,19 @@ func zeroize(v reflect.Value, n int) {
 		}
 	case reflect.Array, reflect.Slice:
 		// Fast path for when value is a []byte.
-		if v.Type().Elem().Kind() == reflect.Uint8 {
+		if v.Kind() == reflect.Slice && v.Type().Elem().Kind() == reflect.Uint8 {
 			b := v.Bytes()
 			for i := range b {
 				b[i] = 0
 			}
 		} else {
 			for i := range v.Len() {
-				zeroize(v.Index(i).Addr(), n+1)
+				elem := v.Index(i)
+				if elem.CanAddr() {
+					zeroize(elem.Addr(), n+1)
+				} else {
+					zeroize(elem, n+1)
+				}
 			}
 		}
 	case reflect.Map:
