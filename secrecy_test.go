@@ -293,6 +293,25 @@ func TestZeroize(t *testing.T) {
 		}
 	})
 
+	t.Run("map with struct slice values", func(t *testing.T) {
+		type holder struct {
+			B []byte
+		}
+
+		b := []byte("secret")
+		value := map[string]holder{"k": {B: b}}
+		Zeroize(value)
+		if len(value) != 0 {
+			t.Errorf("expected empty map, got: %v", value)
+		}
+		for _, c := range b {
+			if c != 0 {
+				t.Errorf("expected aliased backing array to be zeroed, got: %q", b)
+				break
+			}
+		}
+	})
+
 	t.Run("map with byte array values", func(t *testing.T) {
 		value := map[string][3]byte{"a": {1, 2, 3}}
 		Zeroize(value)

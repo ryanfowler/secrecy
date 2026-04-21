@@ -164,8 +164,13 @@ func zeroize(v reflect.Value, n int) {
 		t := v.Type()
 		for i := range t.NumField() {
 			field := v.Field(i)
-			if field.CanAddr() && v.Type().Field(i).IsExported() {
+			if !t.Field(i).IsExported() {
+				continue
+			}
+			if field.CanAddr() {
 				zeroize(field.Addr(), n+1)
+			} else {
+				zeroize(field, n+1)
 			}
 		}
 	}
